@@ -15,13 +15,17 @@
       scaled with `cover` so it fills any resolution/aspect ratio without
       stretching or distorting it. Nothing else is drawn on it.
 
-      #ui-root is an empty, deliberate placeholder: every future piece of
-      interface (HUD, buttons, fruit layer, menus, text) will be mounted
-      inside it, always rendered above the background.
+      #ui-root holds every piece of interface, always rendered above the
+      background. Right now it only has #game-box (the game container: glass
+      box + metal console + reserved black ad zone, all baked into one
+      image, unmodified, anchored to the bottom edge). Future HUD/buttons/
+      fruit/menus mount inside #ui-root too, on top of #game-box.
     -->
     <div id="game-root">
       <div id="background-layer" aria-hidden="true"></div>
-      <div id="ui-root"></div>
+      <div id="ui-root">
+        <img id="game-box" src="../assets/box/game-box.png" alt="" />
+      </div>
     </div>
   </body>
 </html>

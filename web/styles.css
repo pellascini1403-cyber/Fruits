@@ -50,6 +50,38 @@ body {
   width: 100%;
   height: 100%;
   z-index: 1;
-  /* Intentionally empty. Future HUD/buttons/fruit/menus mount here, always
-     stacked above the background. */
+  /* Future HUD/buttons/fruit/menus mount here too, stacked above #game-box. */
+}
+
+/*
+  #game-box is the single provided asset containing the glass container
+  (translucent, so the background shows through — that's intentional, not a
+  bug), the metal console below it, and the reserved black ad-zone bar at
+  its very bottom, all at fixed relative proportions baked into the image.
+
+  It is pinned to the bottom edge, full width, with `height: auto` so its
+  own aspect ratio (~0.617, i.e. 1356x2199px) is preserved exactly — it is
+  scaled uniformly, never stretched or squashed, matching the reference
+  composition. On very different viewport ratios its rendered height will
+  grow/shrink proportionally with the width; that is the same kind of
+  adaptation already applied to #background-layer, not a deviation from it.
+
+  Rough internal landmarks, measured from the source asset, in case future
+  gameplay/physics alignment needs them (all as a fraction of this image's
+  own rendered height, from its top edge):
+    - glass box rim (top, flared opening): ~0% to ~2%
+    - glass box side walls (straight, non-tapered): ~2% to ~61%
+    - floor / console top bevel: ~61% to ~66%
+    - metal console body (with the fruit-tier strip + "FRUVO"): ~66% to ~84%
+    - reserved black ad zone: ~84% to 100% (bottom edge)
+*/
+#game-box {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: auto;
+  display: block;
+  z-index: 1;
 }

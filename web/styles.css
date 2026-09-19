@@ -1,0 +1,55 @@
+/*
+  Base shell for the game screen. This file only establishes the
+  full-viewport stage and the permanent background — no HUD, buttons,
+  fruit, or text styling belongs here yet. Those arrive with their own
+  assets and get their own rules layered on top of #ui-root.
+*/
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  /* Sampled from the background's sky so there is never a flash of white
+     while the image loads or on any sliver `cover` doesn't reach. */
+  background-color: #6fa8dc;
+}
+
+#game-root {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+#background-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("../assets/backgrounds/main-screen.jpg");
+  background-repeat: no-repeat;
+  background-position: center center;
+  /* `cover` fills every resolution/aspect ratio without ever stretching
+     or squashing the source image — proportions stay exactly as provided. */
+  background-size: cover;
+  z-index: 0;
+}
+
+#ui-root {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  /* Intentionally empty. Future HUD/buttons/fruit/menus mount here, always
+     stacked above the background. */
+}

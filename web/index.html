@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Fruvo | Fruits Merge</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!--
+      #game-root is the fixed, full-viewport stage. Everything the game ever
+      shows lives inside it, stacked on top of #background-layer.
+
+      #background-layer holds ONLY the provided background image, unmodified,
+      scaled with `cover` so it fills any resolution/aspect ratio without
+      stretching or distorting it. Nothing else is drawn on it.
+
+      #ui-root is an empty, deliberate placeholder: every future piece of
+      interface (HUD, buttons, fruit layer, menus, text) will be mounted
+      inside it, always rendered above the background.
+    -->
+    <div id="game-root">
+      <div id="background-layer" aria-hidden="true"></div>
+      <div id="ui-root"></div>
+    </div>
+  </body>
+</html>

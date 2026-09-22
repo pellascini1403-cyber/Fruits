@@ -179,7 +179,7 @@ describe("GameEngine: restart", () => {
 });
 
 describe("GameEngine: power-ups (logic only)", () => {
-  it("removeFruit, upgradeFruit, removeSmallestFruits and shakeBox operate through the facade", () => {
+  it("removeFruit, upgradeFruit, removeSmallFruits and shakeBox operate through the facade", () => {
     const engine = new GameEngine({ persistence: new InMemoryPersistenceAdapter() });
     engine.dropCurrentFruit();
     runUntil(engine, () => engine.getGameState() === GameStatus.AIMING);
@@ -201,6 +201,9 @@ describe("GameEngine: power-ups (logic only)", () => {
     const removed = engine.removeFruit(idToRemove);
     expect(removed).toBe(true);
     expect(engine.getFruits().find((f) => f.id === idToRemove)).toBeUndefined();
+
+    expect(() => engine.removeSmallFruits()).not.toThrow();
+    expect(engine.getFruits().every((f) => !getFruitDefinition(f.level).spawnable)).toBe(true);
   });
 });
 

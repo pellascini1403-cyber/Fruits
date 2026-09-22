@@ -269,11 +269,11 @@ export class GameEngine {
     return upgraded;
   }
 
-  removeSmallestFruits(count = 3): number[] {
+  removeSmallFruits(): number[] {
     if (this.status === GameStatus.GAME_OVER) {
       return [];
     }
-    const removed = this.powerUps.removeSmallestFruits(count);
+    const removed = this.powerUps.removeSmallFruits();
     if (removed.length > 0) {
       this.notify();
     }

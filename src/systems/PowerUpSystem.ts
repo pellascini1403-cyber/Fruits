@@ -27,17 +27,18 @@ export class PowerUpSystem {
   }
 
   /**
-   * Removes the `count` smallest-level fruits currently in play (ties broken
-   * by lowest id, for determinism). Configurable via `count` so the rule can
-   * be balanced without touching the implementation.
+   * Removes every "small" fruit currently in play, keeps every "large" one.
+   * The small/large split reuses the fruit table's own `spawnable` boundary
+   * (Cherry..Apple, the levels NEXT can hand the player, count as small;
+   * Pear..Banana, merge-only tiers, count as large) rather than an arbitrary
+   * count, so it can never remove a fruit the player couldn't have dropped
+   * themselves.
    */
-  removeSmallestFruits(count = 3): number[] {
-    const sorted = [...this.physics.getFruitBodies()].sort((a, b) => {
-      const levelDiff = a.plugin.fruit.level - b.plugin.fruit.level;
-      return levelDiff !== 0 ? levelDiff : a.plugin.fruit.id - b.plugin.fruit.id;
-    });
+  removeSmallFruits(): number[] {
+    const toRemove = this.physics
+      .getFruitBodies()
+      .filter((body) => getFruitDefinition(body.plugin.fruit.level).spawnable);
 
-    const toRemove = sorted.slice(0, Math.max(0, count));
     for (const body of toRemove) {
       this.physics.removeBody(body);
     }

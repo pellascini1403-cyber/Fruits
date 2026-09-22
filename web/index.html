@@ -8,24 +8,65 @@
   </head>
   <body>
     <!--
-      #game-root is the fixed, full-viewport stage. Everything the game ever
-      shows lives inside it, stacked on top of #background-layer.
-
-      #background-layer holds ONLY the provided background image, unmodified,
-      scaled with `cover` so it fills any resolution/aspect ratio without
-      stretching or distorting it. Nothing else is drawn on it.
-
-      #ui-root holds every piece of interface, always rendered above the
-      background. Right now it only has #game-box (the game container: glass
-      box + metal console + reserved black ad zone, all baked into one
-      image, unmodified, anchored to the bottom edge). Future HUD/buttons/
-      fruit/menus mount inside #ui-root too, on top of #game-box.
+      #game-root: fixed, full-viewport stage.
+      #background-layer: the bedroom photo, `cover`-scaled, unmodified.
+      #ui-root: everything else, stacked above the background.
+        - .hud-row: menu/no-ads/next (row 1) + the 4 power-ups (row 2).
+        - #game-box: the machine (glass box + console + reserved ad bar),
+          one unmodified image, anchored to the bottom edge, width 100%.
+        - #sim-space: a fixed-size virtual coordinate space that the physics
+          engine simulates in; layout.ts transforms it (translate+scale) to
+          exactly cover the box's glass interior, wherever that lands on
+          screen. Every fruit, plus the launcher (current fruit + aim line),
+          is a child of it, so game logic never has to know actual pixels.
     -->
     <div id="game-root">
       <div id="background-layer" aria-hidden="true"></div>
       <div id="ui-root">
-        <img id="game-box" src="../assets/box/game-box.png" alt="" />
+        <div class="hud-row">
+          <div class="hud-column hud-column--left">
+            <div class="hud-line">
+              <button id="menu-button" class="hud-button" type="button" aria-label="Settings">
+                <img src="../assets/hud/menu.png" alt="" />
+              </button>
+              <button id="no-ads-button" class="hud-button" type="button" aria-label="Remove ads">
+                <img src="../assets/hud/no-ads.png" alt="" />
+              </button>
+            </div>
+            <div class="hud-line">
+              <button id="powerup-shake" class="hud-button powerup-button" type="button" aria-label="Shake the phone to mix them">
+                <img src="../assets/hud/powerup-shake-available.png" alt="" />
+              </button>
+              <button id="powerup-upgrade" class="hud-button powerup-button" type="button" aria-label="Upgrade a fruit">
+                <img src="../assets/hud/powerup-upgrade-available.png" alt="" />
+              </button>
+            </div>
+          </div>
+          <div class="hud-column hud-column--right">
+            <div class="hud-line hud-line--end">
+              <div class="next-badge">
+                <img class="next-label" src="../assets/hud/next-label.png" alt="" />
+                <div class="next-fruit-slot">
+                  <img id="next-fruit-img" src="../assets/fruits/05-apple.png" alt="Next fruit" />
+                </div>
+              </div>
+            </div>
+            <div class="hud-line hud-line--end">
+              <button id="powerup-bomb" class="hud-button powerup-button" type="button" aria-label="Explode a fruit">
+                <img src="../assets/hud/powerup-bomb-available.png" alt="" />
+              </button>
+              <button id="powerup-shrink" class="hud-button powerup-button" type="button" aria-label="Remove small fruits">
+                <img src="../assets/hud/powerup-shrink-available.png" alt="" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <img id="game-box" src="../assets/box/game-box-purple.png" alt="" />
+        <div id="sim-space"></div>
       </div>
     </div>
+
+    <script src="dist/bundle.js"></script>
   </body>
 </html>

@@ -35,18 +35,18 @@ describe("PowerUpSystem", () => {
     expect(physics.getFruitBodies()).toHaveLength(1);
   });
 
-  it("removeSmallestFruits removes exactly the N lowest-level fruits in play", () => {
+  it("removeSmallFruits removes every spawnable-level fruit and keeps every large (merge-only) one", () => {
     const { physics, powerUps } = setup();
     physics.createFruitBody(getFruitDefinition(FruitLevel.Banana), 50, 100);
     physics.createFruitBody(getFruitDefinition(FruitLevel.Cherry), 150, 100);
-    physics.createFruitBody(getFruitDefinition(FruitLevel.Grape), 250, 100);
+    physics.createFruitBody(getFruitDefinition(FruitLevel.Pear), 250, 100);
     physics.createFruitBody(getFruitDefinition(FruitLevel.Strawberry), 350, 100);
 
-    const removedIds = powerUps.removeSmallestFruits(2);
+    const removedIds = powerUps.removeSmallFruits();
 
     expect(removedIds).toHaveLength(2);
     const remainingLevels = physics.getFruitBodies().map((b) => b.plugin.fruit.level).sort();
-    expect(remainingLevels).toEqual([FruitLevel.Grape, FruitLevel.Banana].sort());
+    expect(remainingLevels).toEqual([FruitLevel.Pear, FruitLevel.Banana].sort());
   });
 
   it("upgradeFruit promotes a fruit exactly one level and preserves its id-less identity/position", () => {

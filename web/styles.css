@@ -1,8 +1,9 @@
 /*
-  Base shell for the game screen. This file only establishes the
-  full-viewport stage and the permanent background — no HUD, buttons,
-  fruit, or text styling belongs here yet. Those arrive with their own
-  assets and get their own rules layered on top of #ui-root.
+  Full visual shell for Fruvo: bedroom background, purple machine, HUD row
+  (menu/no-ads/next + 4 power-ups), the physics sim-space viewport, and the
+  Settings/Remove-Ads modal panels. Game logic (src/) knows nothing about any
+  of this — it only ever gets called through the plain functions in
+  web/src/*.ts.
 */
 
 * {
@@ -16,9 +17,20 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  /* Sampled from the background's sky so there is never a flash of white
-     while the image loads or on any sliver `cover` doesn't reach. */
-  background-color: #6fa8dc;
+  /* Sampled from the bedroom wall so there's never a flash of white while
+     the background image loads. */
+  background-color: #6b7fc7;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
 }
 
 #game-root {
@@ -28,6 +40,8 @@ body {
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
+  touch-action: none;
+  user-select: none;
 }
 
 #background-layer {
@@ -35,11 +49,9 @@ body {
   inset: 0;
   width: 100%;
   height: 100%;
-  background-image: url("../assets/backgrounds/main-screen.jpg");
+  background-image: url("../assets/backgrounds/bedroom.jpg");
   background-repeat: no-repeat;
   background-position: center center;
-  /* `cover` fills every resolution/aspect ratio without ever stretching
-     or squashing the source image — proportions stay exactly as provided. */
   background-size: cover;
   z-index: 0;
 }
@@ -50,31 +62,12 @@ body {
   width: 100%;
   height: 100%;
   z-index: 1;
-  /* Future HUD/buttons/fruit/menus mount here too, stacked above #game-box. */
 }
 
-/*
-  #game-box is the single provided asset containing the glass container
-  (translucent, so the background shows through — that's intentional, not a
-  bug), the metal console below it, and the reserved black ad-zone bar at
-  its very bottom, all at fixed relative proportions baked into the image.
+/* ---------------------------------------------------------------------- */
+/* Machine: glass box + console + reserved ad bar, one unmodified asset.  */
+/* ---------------------------------------------------------------------- */
 
-  It is pinned to the bottom edge, full width, with `height: auto` so its
-  own aspect ratio (~0.617, i.e. 1356x2199px) is preserved exactly — it is
-  scaled uniformly, never stretched or squashed, matching the reference
-  composition. On very different viewport ratios its rendered height will
-  grow/shrink proportionally with the width; that is the same kind of
-  adaptation already applied to #background-layer, not a deviation from it.
-
-  Rough internal landmarks, measured from the source asset, in case future
-  gameplay/physics alignment needs them (all as a fraction of this image's
-  own rendered height, from its top edge):
-    - glass box rim (top, flared opening): ~0% to ~2%
-    - glass box side walls (straight, non-tapered): ~2% to ~61%
-    - floor / console top bevel: ~61% to ~66%
-    - metal console body (with the fruit-tier strip + "FRUVO"): ~66% to ~84%
-    - reserved black ad zone: ~84% to 100% (bottom edge)
-*/
 #game-box {
   position: absolute;
   left: 0;
@@ -84,4 +77,322 @@ body {
   height: auto;
   display: block;
   z-index: 1;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Physics sim-space: a fixed-size virtual viewport, positioned/scaled by  */
+/* layout.ts to exactly cover the box's glass interior on every screen.   */
+/* ---------------------------------------------------------------------- */
+
+#sim-space {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 640px;
+  height: 642px;
+  transform-origin: top left;
+  z-index: 2;
+}
+
+.fruit {
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* Needs real hit-testing so power-ups (upgrade/bomb) can target a specific
+     settled fruit by tapping it directly. */
+  pointer-events: auto;
+  will-change: transform;
+}
+
+.current-fruit {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  will-change: transform;
+  /* Subtle white halo — not a strong light-source effect, just enough to
+     read as "selected, ready to launch". */
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.75)) drop-shadow(0 0 14px rgba(255, 255, 255, 0.45));
+}
+
+.aim-line {
+  position: absolute;
+  width: 4px;
+  margin-left: -2px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.9) 0px,
+    rgba(255, 255, 255, 0.9) 22px,
+    transparent 22px,
+    transparent 37px
+  );
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------- */
+/* HUD row: menu/no-ads/next (top) + the 4 power-ups (bottom).            */
+/* ---------------------------------------------------------------------- */
+
+.hud-row {
+  position: absolute;
+  top: 3%;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 4%;
+  z-index: 3;
+}
+
+.hud-column {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5vw;
+}
+
+.hud-line {
+  display: flex;
+  gap: 2.5vw;
+}
+
+.hud-line--end {
+  justify-content: flex-end;
+}
+
+.hud-button {
+  width: 12vw;
+  height: 12vw;
+  max-width: 60px;
+  max-height: 60px;
+  flex: none;
+}
+
+.hud-button img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.powerup-button {
+  position: relative;
+  transition: transform 0.15s ease;
+}
+
+.powerup-button.armed {
+  transform: scale(1.12);
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.9));
+}
+
+.powerup-button.depleted {
+  opacity: 0.55;
+}
+
+.next-badge {
+  display: flex;
+  height: 12vw;
+  max-height: 60px;
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.next-badge .next-label {
+  height: 100%;
+  display: block;
+}
+
+.next-fruit-slot {
+  height: 100%;
+  aspect-ratio: 1;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.next-fruit-slot img {
+  width: 78%;
+  height: 78%;
+  object-fit: contain;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Modal panels: Settings, Remove Ads.                                     */
+/* ---------------------------------------------------------------------- */
+
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 10, 40, 0);
+  transition: background 0.2s ease;
+  padding: 8%;
+}
+
+.modal-overlay.visible {
+  background: rgba(15, 10, 40, 0.6);
+}
+
+.panel-card {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  background: linear-gradient(160deg, #d9d3f5, #c3baf0);
+  border-radius: 24px;
+  border: 3px solid #ffffff;
+  padding: 28px 20px 24px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  transform: scale(0.9) translateY(10px);
+  opacity: 0;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.modal-overlay.visible .panel-card {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
+.panel-close {
+  position: absolute;
+  top: -14px;
+  right: -14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, #8a7af0, #5945d6);
+  color: #fff;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+.panel-title {
+  text-align: center;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #fff;
+  background: linear-gradient(160deg, #8a7af0, #5945d6);
+  border-radius: 999px;
+  padding: 10px 24px;
+  margin: 0 auto 20px;
+  width: fit-content;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px 16px;
+  justify-items: center;
+}
+
+.settings-toggle-row,
+.settings-icon-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-label {
+  font-weight: 700;
+  font-size: 13px;
+  color: #3a2f6b;
+  letter-spacing: 0.04em;
+}
+
+.toggle-track {
+  width: 64px;
+  height: 34px;
+  border-radius: 999px;
+  background: #5945d6;
+  position: relative;
+  transition: background 0.2s ease;
+}
+
+.toggle-track .toggle-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: left 0.18s ease;
+}
+
+.toggle-track.on .toggle-knob {
+  left: calc(100% - 31px);
+}
+
+.settings-round-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, #8a7af0, #5945d6);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+
+.language-list {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.language-option {
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  text-align: left;
+  font-weight: 600;
+  color: #3a2f6b;
+}
+
+.language-option.selected {
+  background: #5945d6;
+  color: #fff;
+}
+
+.remove-ads-panel .remove-ads-bullets {
+  list-style: none;
+  color: #3a2f6b;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.remove-ads-bullets li::before {
+  content: "• ";
+}
+
+.price-button {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  border-radius: 999px;
+  background: linear-gradient(160deg, #8a7af0, #5945d6);
+  color: #fff;
+  font-weight: 800;
+  font-size: 16px;
+  text-align: center;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
 }

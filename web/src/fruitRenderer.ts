@@ -1,11 +1,11 @@
 import type { FruitInstance } from "../../src/index.js";
 import { webFruitSpritePath } from "./assetPath.js";
+import { fruitSpriteBox } from "./fruitVisuals.js";
 
 /**
- * Keeps a pool of <img> elements inside #sim-space in sync with
- * `GameEngine.getFruits()`. One element per fruit instance id; created when
- * a fruit first appears (drop or merge result), removed when it's gone
- * (merged away or popped by a power-up).
+ * Keeps one <img> of the original fruit PNG per fruit instance in sync with
+ * `GameEngine.getFruits()`: created when a fruit appears (drop or merge
+ * result), removed when it's gone (merged away or removed by a power-up).
  */
 export class FruitRenderer {
   private readonly elements = new Map<number, HTMLImageElement>();
@@ -17,6 +17,7 @@ export class FruitRenderer {
 
     for (const fruit of fruits) {
       seen.add(fruit.id);
+      const box = fruitSpriteBox(fruit.level, fruit.x, fruit.y, fruit.radius * 2);
       let el = this.elements.get(fruit.id);
       if (!el) {
         el = document.createElement("img");
@@ -25,16 +26,16 @@ export class FruitRenderer {
         el.draggable = false;
         el.alt = "";
         el.dataset.fruitId = String(fruit.id);
+        // Rotate around the visible fruit's centre (= the physics body), not the padded square's.
+        el.style.transformOrigin = `${((fruit.x - box.left) / box.size) * 100}% ${((fruit.y - box.top) / box.size) * 100}%`;
         this.simSpace.appendChild(el);
         this.elements.set(fruit.id, el);
       }
 
-      const diameter = fruit.radius * 2;
-      el.style.width = `${diameter}px`;
-      el.style.height = `${diameter}px`;
+      el.style.width = `${box.size}px`;
+      el.style.height = `${box.size}px`;
       const angleDeg = (fruit.angle * 180) / Math.PI;
-      el.style.transform =
-        `translate(${fruit.x - fruit.radius}px, ${fruit.y - fruit.radius}px) rotate(${angleDeg}deg)`;
+      el.style.transform = `translate(${box.left}px, ${box.top}px) rotate(${angleDeg}deg)`;
     }
 
     for (const [id, el] of this.elements) {
@@ -43,12 +44,5 @@ export class FruitRenderer {
         this.elements.delete(id);
       }
     }
-  }
-
-  clear(): void {
-    for (const el of this.elements.values()) {
-      el.remove();
-    }
-    this.elements.clear();
   }
 }

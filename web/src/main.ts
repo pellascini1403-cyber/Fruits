@@ -2,7 +2,7 @@ import { DEFAULT_GAME_CONFIG, GameEngine } from "../../src/index.js";
 import { SimSpaceLayout } from "./layout.js";
 import { FruitRenderer } from "./fruitRenderer.js";
 import { Launcher } from "./launcher.js";
-import { PowerUpController, PowerUpButtonRefs } from "./powerups.js";
+import { PowerUpController } from "./powerups.js";
 import { setupHud } from "./hud.js";
 import { SIM_DANGER_Y, SIM_HEIGHT, SIM_SPAWN_Y, SIM_WIDTH } from "./config.js";
 
@@ -12,18 +12,6 @@ function required<T extends Element>(id: string): T {
     throw new Error(`Missing required element #${id}`);
   }
   return el as unknown as T;
-}
-
-function powerUpButton(id: string, key: PowerUpButtonRefs["key"], base: string): PowerUpButtonRefs {
-  const el = required<HTMLElement>(id);
-  const img = el.querySelector("img") as HTMLImageElement;
-  return {
-    key,
-    el,
-    img,
-    availableSrc: `../assets/hud/${base}-available.png`,
-    usedSrc: `../assets/hud/${base}-used.png`,
-  };
 }
 
 function bootstrap(): void {
@@ -53,22 +41,9 @@ function bootstrap(): void {
   const layout = new SimSpaceLayout(gameRoot, boxImage, simSpace);
   const fruitRenderer = new FruitRenderer(simSpace);
 
-  const powerUpButtons: PowerUpButtonRefs[] = [
-    powerUpButton("powerup-shake", "shake", "powerup-shake"),
-    powerUpButton("powerup-upgrade", "upgrade", "powerup-upgrade"),
-    powerUpButton("powerup-bomb", "bomb", "powerup-bomb"),
-    powerUpButton("powerup-shrink", "shrink", "powerup-shrink"),
-  ];
+  const powerUpButtons = setupHud(engine, uiRoot);
   const powerUps = new PowerUpController(engine, powerUpButtons, simSpace);
-
   const launcher = new Launcher(engine, layout, simSpace, simSpace, () => powerUps.isArmed());
-
-  setupHud(engine, {
-    root: uiRoot,
-    menuButton: required("menu-button"),
-    noAdsButton: required("no-ads-button"),
-    nextFruitImg: required("next-fruit-img"),
-  });
 
   function resize(): void {
     layout.recalculate();

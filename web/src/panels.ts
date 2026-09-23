@@ -1,16 +1,17 @@
 import { GameEngine } from "../../src/index.js";
 import {
-  getAdsRemoved,
   getLanguage,
   getMusicEnabled,
   getSoundEnabled,
+  LanguageCode,
   setAdsRemoved,
   setLanguage,
   setMusicEnabled,
   setSoundEnabled,
   SUPPORTED_LANGUAGES,
-  LanguageCode,
 } from "./storage.js";
+import { MODAL_DIM, REMOVE_ADS_PANEL, SETTINGS_PANEL, Rect } from "./uiLayout.js";
+import { placeInImage, ref } from "./refPx.js";
 
 const LANGUAGE_LABELS: Record<LanguageCode, string> = {
   es: "Español",
@@ -23,33 +24,54 @@ const LANGUAGE_LABELS: Record<LanguageCode, string> = {
   ru: "Русский",
 };
 
-/** Generic dim-overlay + centered panel with a close X, shared by every panel. */
+interface PanelSpec {
+  src: string;
+  natural: { w: number; h: number };
+  placement: { x: number; y: number; scale: number };
+}
+
+/**
+ * A modal showing one original panel PNG exactly as provided, over a dimmed
+ * screen. Interactive parts (X, buttons, toggles) are invisible hit areas
+ * laid over the PNG's own drawing of them — nothing is redrawn.
+ */
 export class Panel {
   readonly overlay: HTMLDivElement;
-  readonly card: HTMLDivElement;
+  /** Same box as the panel PNG; children are positioned in its pixel coords. */
+  readonly frame: HTMLDivElement;
 
-  constructor(className: string, onClose: () => void) {
+  constructor(readonly spec: PanelSpec) {
     this.overlay = document.createElement("div");
     this.overlay.className = "modal-overlay";
+    this.overlay.style.background = MODAL_DIM;
 
-    this.card = document.createElement("div");
-    this.card.className = `panel-card ${className}`;
+    this.frame = document.createElement("div");
+    this.frame.className = "panel-frame";
+    const { x, y, scale } = spec.placement;
+    this.frame.style.left = ref(x);
+    this.frame.style.top = ref(y);
+    this.frame.style.width = ref(spec.natural.w * scale);
+    this.frame.style.height = ref(spec.natural.h * scale);
 
-    const closeButton = document.createElement("button");
-    closeButton.className = "panel-close";
-    closeButton.type = "button";
-    closeButton.setAttribute("aria-label", "Close");
-    closeButton.textContent = "✕";
-    closeButton.addEventListener("click", onClose);
+    const img = document.createElement("img");
+    img.className = "panel-image";
+    img.src = spec.src;
+    img.alt = "";
+    img.draggable = false;
+    this.frame.appendChild(img);
 
-    this.card.appendChild(closeButton);
-    this.overlay.appendChild(this.card);
+    this.overlay.appendChild(this.frame);
+  }
 
-    this.overlay.addEventListener("click", (event) => {
-      if (event.target === this.overlay) {
-        onClose();
-      }
-    });
+  addHotspot(rect: Rect, label: string, onTap: () => void): HTMLButtonElement {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "hotspot";
+    button.setAttribute("aria-label", label);
+    placeInImage(button, rect, this.spec.natural);
+    button.addEventListener("click", onTap);
+    this.frame.appendChild(button);
+    return button;
   }
 
   open(root: HTMLElement): void {
@@ -59,137 +81,148 @@ export class Panel {
 
   close(): void {
     this.overlay.classList.remove("visible");
-    window.setTimeout(() => this.overlay.remove(), 200);
+    window.setTimeout(() => this.overlay.remove(), 180);
   }
 }
 
-function makeToggle(label: string, initial: boolean, onChange: (value: boolean) => void): HTMLElement {
-  const row = document.createElement("div");
-  row.className = "settings-toggle-row";
+/**
+ * One of the panel's two switches. The panel PNG draws both switches ON, so
+ * at rest in the ON state nothing is layered on top — the original pixels
+ * show as-is. Turning it OFF lays the knob-less section of the same switch
+ * over the drawn knob and slides the knob (lifted from the same PNG) left.
+ */
+function attachToggle(
+  panel: Panel,
+  cfg: (typeof SETTINGS_PANEL.toggles)["sound"],
+  coverSrc: string,
+  hotspot: Rect,
+  label: string,
+  initial: boolean,
+  onChange: (value: boolean) => void,
+): void {
+  const natural = SETTINGS_PANEL.natural;
+  const knobHalf = SETTINGS_PANEL.knobSize / 2;
 
-  const track = document.createElement("button");
-  track.type = "button";
-  track.className = "toggle-track";
-  track.classList.toggle("on", initial);
-  const knob = document.createElement("span");
-  knob.className = "toggle-knob";
-  track.appendChild(knob);
+  const cover = document.createElement("img");
+  cover.className = "panel-layer";
+  cover.src = coverSrc;
+  cover.alt = "";
+  placeInImage(cover, { x: cfg.cover.x, y: cfg.cover.y, w: SETTINGS_PANEL.coverSize, h: SETTINGS_PANEL.coverSize }, natural);
 
-  let value = initial;
-  track.addEventListener("click", () => {
-    value = !value;
-    track.classList.toggle("on", value);
-    onChange(value);
+  const knob = document.createElement("img");
+  knob.className = "panel-layer toggle-knob";
+  knob.src = "../assets/panels/toggle-knob.png";
+  knob.alt = "";
+  const knobRect = (c: { x: number; y: number }): Rect => ({
+    x: c.x - knobHalf,
+    y: c.y - knobHalf,
+    w: SETTINGS_PANEL.knobSize,
+    h: SETTINGS_PANEL.knobSize,
   });
 
-  const text = document.createElement("span");
-  text.className = "settings-label";
-  text.textContent = label;
+  panel.frame.appendChild(cover);
+  panel.frame.appendChild(knob);
 
-  row.appendChild(track);
-  row.appendChild(text);
-  return row;
+  let value = initial;
+  const showLayers = (visible: boolean): void => {
+    cover.style.display = visible ? "block" : "none";
+    knob.style.display = visible ? "block" : "none";
+  };
+
+  if (value) {
+    showLayers(false);
+  } else {
+    placeInImage(knob, knobRect(cfg.off), natural);
+    showLayers(true);
+  }
+
+  panel.addHotspot(hotspot, label, () => {
+    value = !value;
+    onChange(value);
+
+    knob.classList.remove("sliding");
+    placeInImage(knob, knobRect(value ? cfg.off : cfg.on), natural);
+    showLayers(true);
+    void knob.offsetWidth; // commit the start position before animating
+    knob.classList.add("sliding");
+    placeInImage(knob, knobRect(value ? cfg.on : cfg.off), natural);
+
+    if (value) {
+      knob.addEventListener(
+        "transitionend",
+        () => {
+          if (value) {
+            showLayers(false);
+          }
+        },
+        { once: true },
+      );
+    }
+  });
 }
 
-function makeIconAction(label: string, iconText: string, onClick: () => void): HTMLElement {
-  const wrap = document.createElement("div");
-  wrap.className = "settings-icon-action";
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "settings-round-icon";
-  button.textContent = iconText;
-  button.addEventListener("click", onClick);
-  const text = document.createElement("span");
-  text.className = "settings-label";
-  text.textContent = label;
-  wrap.appendChild(button);
-  wrap.appendChild(text);
-  return wrap;
-}
-
-/** SETTINGS panel: sound/music toggles (persisted), reset (restarts the run), language picker shell. */
+/** SETTINGS: sound/music switches (persisted), reset (restarts the run), language. */
 export function createSettingsPanel(engine: GameEngine): Panel {
-  let panel!: Panel;
-  panel = new Panel("settings-panel", () => panel.close());
+  const panel = new Panel(SETTINGS_PANEL);
+  const h = SETTINGS_PANEL.hotspots;
 
-  const title = document.createElement("div");
-  title.className = "panel-title";
-  title.textContent = "SETTINGS";
-  panel.card.appendChild(title);
-
-  const grid = document.createElement("div");
-  grid.className = "settings-grid";
-  grid.appendChild(makeToggle("SOUND", getSoundEnabled(), setSoundEnabled));
-  grid.appendChild(makeToggle("MUSIC", getMusicEnabled(), setMusicEnabled));
-  grid.appendChild(
-    makeIconAction("RESET", "⟲", () => {
-      engine.restartGame();
-      panel.close();
-    }),
+  attachToggle(
+    panel,
+    SETTINGS_PANEL.toggles.sound,
+    "../assets/panels/toggle-cover-sound.png",
+    h.sound,
+    "Sound",
+    getSoundEnabled(),
+    setSoundEnabled,
   );
-  grid.appendChild(makeIconAction("LANGUAGE", "Aa", () => openLanguagePicker(panel)));
-  panel.card.appendChild(grid);
+  attachToggle(
+    panel,
+    SETTINGS_PANEL.toggles.music,
+    "../assets/panels/toggle-cover-music.png",
+    h.music,
+    "Music",
+    getMusicEnabled(),
+    setMusicEnabled,
+  );
 
+  panel.addHotspot(h.reset, "Reset", () => {
+    engine.restartGame();
+    panel.close();
+  });
+
+  // No language-picker artwork was provided, so the LANGUAGE button opens the
+  // device's own native picker instead of a made-up one: an invisible <select>
+  // sits over the button drawn in the PNG.
+  const select = document.createElement("select");
+  select.className = "hotspot";
+  select.setAttribute("aria-label", "Language");
+  placeInImage(select, h.language, SETTINGS_PANEL.natural);
+  for (const code of SUPPORTED_LANGUAGES) {
+    const option = document.createElement("option");
+    option.value = code;
+    option.textContent = LANGUAGE_LABELS[code];
+    select.appendChild(option);
+  }
+  select.value = getLanguage();
+  select.addEventListener("change", () => setLanguage(select.value as LanguageCode));
+  panel.frame.appendChild(select);
+
+  panel.addHotspot(h.close, "Close", () => panel.close());
   return panel;
 }
 
-function openLanguagePicker(parentPanel: Panel): void {
-  const list = document.createElement("div");
-  list.className = "language-list";
-  for (const code of SUPPORTED_LANGUAGES) {
-    const option = document.createElement("button");
-    option.type = "button";
-    option.className = "language-option";
-    option.classList.toggle("selected", getLanguage() === code);
-    option.textContent = LANGUAGE_LABELS[code];
-    option.addEventListener("click", () => {
-      setLanguage(code);
-      for (const sibling of list.children) {
-        sibling.classList.remove("selected");
-      }
-      option.classList.add("selected");
-    });
-    list.appendChild(option);
-  }
-
-  const existing = parentPanel.card.querySelector(".language-list");
-  if (existing) {
-    existing.replaceWith(list);
-  } else {
-    parentPanel.card.appendChild(list);
-  }
-}
-
-/** REMOVE ADS panel: one-time purchase placeholder — no real payment SDK wired yet. */
+/** REMOVE ADS: one-time purchase. Placeholder — no payment SDK is wired up yet. */
 export function createRemoveAdsPanel(onPurchased: () => void): Panel {
-  let panel!: Panel;
-  panel = new Panel("remove-ads-panel", () => panel.close());
+  const panel = new Panel(REMOVE_ADS_PANEL);
+  const h = REMOVE_ADS_PANEL.hotspots;
 
-  const banner = document.createElement("div");
-  banner.className = "panel-title";
-  banner.textContent = "REMOVE ADS";
-  panel.card.appendChild(banner);
-
-  const description = document.createElement("ul");
-  description.className = "remove-ads-bullets";
-  description.innerHTML = "<li>Keep video Ads for rewards</li><li>Remove banner and full screen Ads</li>";
-  panel.card.appendChild(description);
-
-  const priceButton = document.createElement("button");
-  priceButton.type = "button";
-  priceButton.className = "price-button";
-  priceButton.textContent = "$US 6.99";
-  priceButton.addEventListener("click", () => {
-    // Placeholder: no real payment SDK is wired up yet. Connect your store's
-    // purchase flow here, then only call setAdsRemoved(true) after a valid
-    // receipt is confirmed.
+  panel.addHotspot(h.buy, "Buy: remove ads", () => {
+    // Connect the store's purchase flow here, and only call setAdsRemoved(true)
+    // once a valid receipt is confirmed.
     setAdsRemoved(true);
     onPurchased();
     panel.close();
   });
-  panel.card.appendChild(priceButton);
-
+  panel.addHotspot(h.close, "Close", () => panel.close());
   return panel;
 }
-
-export { getAdsRemoved };

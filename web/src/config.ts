@@ -32,6 +32,14 @@ const interiorHeightFractionOfBoxWidth =
   (BOX_LANDMARKS.interiorBottom - BOX_LANDMARKS.interiorTop) / BOX_ASPECT_RATIO;
 export const SIM_HEIGHT = SIM_WIDTH * (interiorHeightFractionOfBoxWidth / interiorWidthFraction);
 
-/** Where a fresh current fruit spawns, and how close to the top counts as danger. */
-export const SIM_SPAWN_Y = SIM_HEIGHT * 0.06;
+/** Sim units per reference pixel (the 856px-wide positioning mockup). */
+export const SIM_PER_REF = SIM_WIDTH / (856 * interiorWidthFraction);
+
+/**
+ * Where the current fruit waits to be launched: above the box's rim, as in
+ * the positioning mockup (fruit centre 53.3 ref px above the glass interior).
+ */
+export const SIM_SPAWN_Y = -53.3 * SIM_PER_REF;
+
+/** How close to the top counts as danger. */
 export const SIM_DANGER_Y = SIM_HEIGHT * 0.1;

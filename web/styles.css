@@ -31,8 +31,7 @@ img {
   -webkit-user-drag: none;
 }
 
-button,
-select {
+button {
   background: none;
   border: none;
   padding: 0;
@@ -189,4 +188,84 @@ select {
 .hotspot {
   position: absolute;
   opacity: 0;
+}
+
+/*
+  Fruvo's own language picker. Unlike everything else, no PNG was provided
+  for this control (it's new functionality), so its colours are sampled
+  from the Settings panel PNG itself (the same lavender/purple) to blend in
+  rather than introducing a new palette.
+*/
+.language-overlay {
+  z-index: 11;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--u) * 60);
+}
+
+.language-card {
+  width: 100%;
+  max-width: calc(var(--u) * 560);
+  background: rgb(200, 188, 237);
+  border: calc(var(--u) * 3) solid #fff;
+  border-radius: calc(var(--u) * 28);
+  padding: calc(var(--u) * 24);
+  box-shadow: 0 calc(var(--u) * 10) calc(var(--u) * 24) rgba(0, 0, 0, 0.35);
+  transform: scale(0.92);
+  transition: transform 0.18s ease;
+  font-family: system-ui, sans-serif;
+}
+
+.language-overlay.visible .language-card {
+  transform: scale(1);
+}
+
+.language-title {
+  text-align: center;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: rgb(120, 80, 237);
+  border-radius: 999px;
+  padding: calc(var(--u) * 10) calc(var(--u) * 20);
+  margin: 0 auto calc(var(--u) * 18);
+  width: fit-content;
+  font-size: calc(var(--u) * 20);
+}
+
+.language-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 8);
+  max-height: calc(var(--u) * 480);
+  overflow-y: auto;
+}
+
+.language-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: calc(var(--u) * 14) calc(var(--u) * 18);
+  border-radius: calc(var(--u) * 14);
+  background: rgba(255, 255, 255, 0.55);
+  color: #3a2f6b;
+  font-weight: 700;
+  font-size: calc(var(--u) * 17);
+}
+
+.language-option.selected {
+  background: rgb(120, 80, 237);
+  color: #fff;
+}
+
+.language-close {
+  display: block;
+  margin: calc(var(--u) * 16) auto 0;
+  padding: calc(var(--u) * 10) calc(var(--u) * 28);
+  border-radius: 999px;
+  background: rgb(120, 80, 237);
+  color: #fff;
+  font-weight: 700;
+  font-size: calc(var(--u) * 15);
 }

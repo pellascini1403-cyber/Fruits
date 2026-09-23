@@ -38,16 +38,23 @@ export interface SpriteBox {
   visibleWidth: number;
 }
 
-/** Sizes a fruit so its visible extent spans `diameter`, centred on (x, y). */
-export function fruitSpriteBox(level: FruitLevel, x: number, y: number, diameter: number): SpriteBox {
+/**
+ * Sizes a fruit so its visible WIDTH is exactly `targetWidth`, centred on
+ * (x, y). Width — not the padded square, and not the taller of width/height
+ * — is what should match the physics circle's diameter: it's the fruit's
+ * round-body dimension, the same for every sprite regardless of how much a
+ * stem or leaf extends the artwork's height above it. Sizing by width keeps
+ * every fruit's true diameter faithful to `radius` in fruitDefinitions.ts,
+ * whatever that fruit's own aspect ratio happens to be.
+ */
+export function fruitSpriteBox(level: FruitLevel, x: number, y: number, targetWidth: number): SpriteBox {
   const c = CONTENT[level];
-  const size = diameter / Math.max(c.w, c.h);
-  return { size, left: x - c.cx * size, top: y - c.cy * size, visibleWidth: c.w * size };
+  const size = targetWidth / c.w;
+  return { size, left: x - c.cx * size, top: y - c.cy * size, visibleWidth: targetWidth };
 }
 
-/** Sizes a fruit so its visible height is `height`, centred on (x, y) — used for the NEXT slot. */
-export function fruitSpriteBoxByHeight(level: FruitLevel, x: number, y: number, height: number): SpriteBox {
+/** The visible width a fruit would need for its visible HEIGHT to equal `targetHeight`. */
+export function widthForVisibleHeight(level: FruitLevel, targetHeight: number): number {
   const c = CONTENT[level];
-  const size = height / c.h;
-  return { size, left: x - c.cx * size, top: y - c.cy * size, visibleWidth: c.w * size };
+  return targetHeight * (c.w / c.h);
 }

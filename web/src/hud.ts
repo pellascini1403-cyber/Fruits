@@ -1,6 +1,6 @@
-import { GameEngine } from "../../src/index.js";
+import { FruitLevel, GameEngine, getFruitDefinition } from "../../src/index.js";
 import { webFruitSpritePath } from "./assetPath.js";
-import { fruitSpriteBoxByHeight } from "./fruitVisuals.js";
+import { fruitSpriteBox, widthForVisibleHeight } from "./fruitVisuals.js";
 import { createRemoveAdsPanel, createSettingsPanel } from "./panels.js";
 import { PowerUpButtonRefs } from "./powerups.js";
 import { getAdsRemoved, isPowerUpAvailableToday, PowerUpKey } from "./storage.js";
@@ -69,6 +69,15 @@ export function setupHud(engine: GameEngine, root: HTMLElement): PowerUpButtonRe
   next.appendChild(nextFruit);
   hud.appendChild(next);
 
+  // The badge's white slot was calibrated around the sample apple's own
+  // artwork (213px tall in the original PNG). Anchoring the scale to Apple's
+  // real in-game radius, every other spawnable level then renders at the
+  // same radius-to-pixels ratio — so NEXT shows each fruit proportionally to
+  // how big it actually is in the machine, not all forced to one size.
+  const pxPerRadiusUnit =
+    widthForVisibleHeight(FruitLevel.Apple, NEXT_FRUIT_SLOT.contentHeight) /
+    getFruitDefinition(FruitLevel.Apple).radius;
+
   let shownLevel: number | null = null;
   const renderNext = (): void => {
     const level = engine.getNextFruit();
@@ -77,7 +86,8 @@ export function setupHud(engine: GameEngine, root: HTMLElement): PowerUpButtonRe
     }
     shownLevel = level;
     const s = NEXT_FRUIT_SLOT;
-    const box = fruitSpriteBoxByHeight(level, s.centerX, s.centerY, s.contentHeight);
+    const targetWidth = getFruitDefinition(level).radius * pxPerRadiusUnit;
+    const box = fruitSpriteBox(level, s.centerX, s.centerY, targetWidth);
     nextFruit.src = webFruitSpritePath(level);
     nextFruit.style.left = `${(box.left / s.imageWidth) * 100}%`;
     nextFruit.style.top = `${(box.top / s.imageHeight) * 100}%`;

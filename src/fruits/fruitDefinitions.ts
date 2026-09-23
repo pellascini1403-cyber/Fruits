@@ -6,9 +6,9 @@ import { FruitDefinition, FruitLevel, MAX_FRUIT_LEVEL, MIN_FRUIT_LEVEL } from ".
  * anywhere else. Tune gameplay by editing this file only.
  */
 const FRUIT_DEFINITIONS: readonly FruitDefinition[] = [
-  { level: FruitLevel.Cherry,     name: "Cherry",     nextLevel: FruitLevel.Strawberry, radius: 14, mass: 1,  density: 0.0012, friction: 0.05, restitution: 0.25, score: 1,   spawnable: true },
-  { level: FruitLevel.Strawberry, name: "Strawberry", nextLevel: FruitLevel.Grape,      radius: 20, mass: 2,  density: 0.0012, friction: 0.05, restitution: 0.24, score: 3,   spawnable: true },
-  { level: FruitLevel.Grape,      name: "Grape",      nextLevel: FruitLevel.Mango,      radius: 27, mass: 3,  density: 0.0012, friction: 0.06, restitution: 0.23, score: 6,   spawnable: true },
+  { level: FruitLevel.Cherry,     name: "Cherry",     nextLevel: FruitLevel.Strawberry, radius: 22, mass: 1,  density: 0.0012, friction: 0.05, restitution: 0.25, score: 1,   spawnable: true },
+  { level: FruitLevel.Strawberry, name: "Strawberry", nextLevel: FruitLevel.Grape,      radius: 27, mass: 2,  density: 0.0012, friction: 0.05, restitution: 0.24, score: 3,   spawnable: true },
+  { level: FruitLevel.Grape,      name: "Grape",      nextLevel: FruitLevel.Mango,      radius: 30, mass: 3,  density: 0.0012, friction: 0.06, restitution: 0.23, score: 6,   spawnable: true },
   { level: FruitLevel.Mango,      name: "Mango",      nextLevel: FruitLevel.Apple,      radius: 35, mass: 5,  density: 0.0013, friction: 0.06, restitution: 0.22, score: 10,  spawnable: true },
   { level: FruitLevel.Apple,      name: "Apple",      nextLevel: FruitLevel.Pear,       radius: 44, mass: 8,  density: 0.0013, friction: 0.07, restitution: 0.21, score: 15,  spawnable: true },
   { level: FruitLevel.Pear,       name: "Pear",       nextLevel: FruitLevel.Peach,      radius: 54, mass: 12, density: 0.0013, friction: 0.07, restitution: 0.20, score: 21,  spawnable: false },

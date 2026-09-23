@@ -1,19 +1,19 @@
 import { GameEngine } from "../../src/index.js";
 import {
-  getLanguage,
   getMusicEnabled,
   getSoundEnabled,
   LanguageCode,
   setAdsRemoved,
-  setLanguage,
   setMusicEnabled,
   setSoundEnabled,
   SUPPORTED_LANGUAGES,
 } from "./storage.js";
+import { getCurrentLanguage, onLanguageChange, setCurrentLanguage, t } from "./i18n.js";
 import { MODAL_DIM, REMOVE_ADS_PANEL, SETTINGS_PANEL, Rect } from "./uiLayout.js";
 import { placeInImage, ref } from "./refPx.js";
 
-const LANGUAGE_LABELS: Record<LanguageCode, string> = {
+/** Each language's own name, in its own script — shown the same regardless of the current language. */
+const LANGUAGE_NATIVE_NAMES: Record<LanguageCode, string> = {
   es: "Español",
   en: "English",
   fr: "Français",
@@ -190,25 +190,74 @@ export function createSettingsPanel(engine: GameEngine): Panel {
     panel.close();
   });
 
-  // No language-picker artwork was provided, so the LANGUAGE button opens the
-  // device's own native picker instead of a made-up one: an invisible <select>
-  // sits over the button drawn in the PNG.
-  const select = document.createElement("select");
-  select.className = "hotspot";
-  select.setAttribute("aria-label", "Language");
-  placeInImage(select, h.language, SETTINGS_PANEL.natural);
-  for (const code of SUPPORTED_LANGUAGES) {
-    const option = document.createElement("option");
-    option.value = code;
-    option.textContent = LANGUAGE_LABELS[code];
-    select.appendChild(option);
-  }
-  select.value = getLanguage();
-  select.addEventListener("change", () => setLanguage(select.value as LanguageCode));
-  panel.frame.appendChild(select);
+  // No language-picker artwork was provided (this is new functionality, not
+  // one of the supplied assets), so it's Fruvo's own small picker overlay.
+  const openLanguagePicker = createLanguagePicker();
+  panel.addHotspot(h.language, "Language", () => openLanguagePicker(panel.overlay));
 
   panel.addHotspot(h.close, "Close", () => panel.close());
   return panel;
+}
+
+/** Fruvo's own language picker: the 8 languages, persisted, applied immediately. Returns an `open(root)` function. */
+function createLanguagePicker(): (root: HTMLElement) => void {
+  // No extra dim layer: this opens from within the already-dimmed Settings
+  // panel, so its overlay is just a full-screen, transparent tap-to-close
+  // catcher behind the card.
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay language-overlay";
+
+  const card = document.createElement("div");
+  card.className = "language-card";
+  overlay.appendChild(card);
+
+  const title = document.createElement("div");
+  title.className = "language-title";
+  card.appendChild(title);
+
+  const list = document.createElement("div");
+  list.className = "language-list";
+  card.appendChild(list);
+
+  const closeButton = document.createElement("button");
+  closeButton.type = "button";
+  closeButton.className = "language-close";
+  card.appendChild(closeButton);
+
+  const open = (root: HTMLElement): void => {
+    root.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add("visible"));
+  };
+  const close = (): void => {
+    overlay.classList.remove("visible");
+    window.setTimeout(() => overlay.remove(), 180);
+  };
+  closeButton.addEventListener("click", close);
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) close();
+  });
+
+  const render = (): void => {
+    title.textContent = t("language.title");
+    closeButton.textContent = t("language.close");
+    list.innerHTML = "";
+    for (const code of SUPPORTED_LANGUAGES) {
+      const option = document.createElement("button");
+      option.type = "button";
+      option.className = "language-option";
+      option.classList.toggle("selected", getCurrentLanguage() === code);
+      option.textContent = LANGUAGE_NATIVE_NAMES[code];
+      option.addEventListener("click", () => {
+        setCurrentLanguage(code);
+        close();
+      });
+      list.appendChild(option);
+    }
+  };
+  render();
+  onLanguageChange(render);
+
+  return open;
 }
 
 /** REMOVE ADS: one-time purchase. Placeholder — no payment SDK is wired up yet. */

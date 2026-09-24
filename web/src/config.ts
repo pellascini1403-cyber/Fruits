@@ -11,8 +11,14 @@ export const BOX_ASPECT_RATIO = 1340 / 2173;
 export const BOX_LANDMARKS = {
   /** Below the rim flare, where the straight glass walls begin. */
   interiorTop: 0.02,
-  /** Console top / floor line. */
-  interiorBottom: 0.612,
+  /**
+   * The last horizontal white line inside the box (measured: a solid
+   * 255,255,255 band spanning y=1438-1445 of the 1340x2173 source PNG,
+   * center 1441.5/2173). This is the real floor: fruits must come to rest
+   * with their bottom edge exactly here, not on the glass-fill boundary
+   * above it or the console panel below it.
+   */
+  interiorBottom: 0.6634,
 };
 
 /** Fraction of the box image's width inset on each side (the glass side walls). */

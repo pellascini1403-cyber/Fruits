@@ -1,6 +1,6 @@
 import type { FruitInstance } from "../../src/index.js";
 import { webFruitSpritePath } from "./assetPath.js";
-import { fruitSpriteBox } from "./fruitVisuals.js";
+import { fruitPhysicsSpriteBox } from "./fruitVisuals.js";
 
 /**
  * Keeps one <img> of the original fruit PNG per fruit instance in sync with
@@ -17,7 +17,7 @@ export class FruitRenderer {
 
     for (const fruit of fruits) {
       seen.add(fruit.id);
-      const box = fruitSpriteBox(fruit.level, fruit.x, fruit.y, fruit.radius * 2);
+      const box = fruitPhysicsSpriteBox(fruit.level, fruit.x, fruit.y, fruit.radius * 2);
       let el = this.elements.get(fruit.id);
       if (!el) {
         el = document.createElement("img");
